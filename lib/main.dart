@@ -35,7 +35,11 @@ class _MyAppState extends State<MyApp> {
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       onGenerateRoute: RouteGenerator.generateRoute,
-      initialRoute: OnboardingScreen.id,
+      home: const OnboardingScreen(
+        title: 'Welcome to Text-a-Parent',
+        description: 'Let’s help you connect with school.',
+        imageAsset: 'lib/assets/images/logo.jpeg',
+      ),
     );
   }
 }
