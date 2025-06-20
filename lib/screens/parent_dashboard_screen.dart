@@ -1,86 +1,188 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+//import 'package:fluttertoast/fluttertoast.dart';
 
-import '../features/messaging/class_messages_screen.dart';
-
-class ParentDashboardScreen extends StatelessWidget {
+class ParentDashboardScreen extends StatefulWidget {
   static const String id = 'parentDashboard';
 
-  final List<Map<String, dynamic>> mockClasses = [
-    {
-      'name': 'Grade 1 - Miss Sarah',
-      'lastMessage': 'Reminder: Bring art supplies tomorrow.',
-      'unread': true,
-    },
-    {
-      'name': 'Grade 3 - Mr. Mokoena',
-      'lastMessage': 'Homework due on Friday.',
-      'unread': false,
-    },
-  ];
+  final bool showSuccess;
 
-  ParentDashboardScreen({super.key});
+  const ParentDashboardScreen({super.key, this.showSuccess = false});
 
   @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
+  State<ParentDashboardScreen> createState() => _ParentDashboardScreenState();
+}
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text('Your Classes'),
-      ),
-      body: ListView.builder(
-        itemCount: mockClasses.length,
-        itemBuilder: (_, index) {
-          final classroom = mockClasses[index];
-          return ListTile(
-            title: Text(classroom['name']),
-            subtitle: Text(classroom['lastMessage']),
-            trailing: classroom['unread'] ? const Icon(Icons.mark_email_unread, color: Colors.red) : null,
+class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
+
+  @override
+  void initState() {
+    super.initState();
+  }
+
+  void _openDrawer() {
+    Scaffold.of(context).openDrawer();
+  }
+
+  String _formatTimestamp(Timestamp timestamp) {
+    final date = timestamp.toDate();
+    return '${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}';
+  }
+
+  void _onFabPressed() {
+    // You can show a modal or navigation here to create new diary/message
+    showModalBottomSheet(
+      context: context,
+      builder: (_) => ListView(
+        shrinkWrap: true,
+        children: [
+          ListTile(
+            leading: const Icon(Icons.message),
+            title: const Text('Message Teacher'),
             onTap: () {
-              Navigator.pushNamed(
-                context,
-                ClassMessagesScreen.id,
-                arguments: classroom['name'],
-              );
+              Navigator.pop(context);
+              // Navigate or show form
             },
-          );
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          // Show modal or screen for sending message
-          _showSendMessageDialog(context);
-        },
-        icon: const Icon(Icons.message),
-        label: const Text('Send Message'),
+          ),
+          ListTile(
+            leading: const Icon(Icons.edit_note),
+            title: const Text('Write Diary Entry'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.pushNamed(context,'writeDiary' );
+              // Navigate or show form
+            },
+          ),
+        ],
       ),
     );
   }
 
-  void _showSendMessageDialog(BuildContext context) {
-    final TextEditingController _controller = TextEditingController();
+  @override
+  Widget build(BuildContext context) {
 
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        title: const Text('New Message to Teacher'),
-        content: TextField(
-          controller: _controller,
-          maxLines: 3,
-          decoration: const InputDecoration(hintText: 'Type your message...'),
-        ),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(context), child: const Text('Cancel')),
-          ElevatedButton(
-            onPressed: () {
-              // Send message logic here
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Message sent.')));
-            },
-            child: const Text('Send'),
-          ),
-        ],
+    final currentUser = FirebaseAuth.instance.currentUser;
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text("Diary Inbox"),
       ),
+      drawer: Drawer(
+        child: ListView(
+          children: [
+            const DrawerHeader(
+              decoration: BoxDecoration(color: Colors.blue),
+              child: Text("Welcome, Parent", style: TextStyle(color: Colors.white, fontSize: 20)),
+            ),
+            ListTile(
+              leading: const Icon(Icons.person),
+              title: const Text('Profile'),
+              onTap: () {
+                // Navigate to profile
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.settings),
+              title: const Text('Settings'),
+              onTap: () {
+                // Navigate to settings
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.logout),
+              title: const Text('Logout'),
+              onTap: () {
+                // Handle logout
+              },
+            ),
+          ],
+        ),
+      ),
+      body: _diaryEntries(context),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _onFabPressed,
+        child: const Icon(Icons.add),
+      ),
+    );
+  }
+
+  Widget _diaryEntries(BuildContext ctx) {
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('diary_entries')
+          .where('parentId')
+          .orderBy('timestamp', descending: true)
+          .snapshots(),
+      builder: (context, snapshot) {
+        if (!snapshot.hasData) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        final entries = snapshot.data!.docs;
+
+        if (entries.isEmpty) {
+          return const Center(child: Text('No diary entries yet.'));
+        }
+
+        return ListView.builder(
+          itemCount: entries.length,
+          itemBuilder: (context, index) {
+            final entry = entries[index];
+            final isFromTeacher = entry['sender'] == 'teacher';
+            final isRead = isFromTeacher
+                ? entry['isReadByParent']
+                : entry['isReadByTeacher'];
+            final readAt = isFromTeacher
+                ? entry['readByParentAt']
+                : entry['readByTeacherAt'];
+
+            return Card(
+              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              child: ListTile(
+                leading: CircleAvatar(
+                  backgroundColor: isFromTeacher ? Colors.blue : Colors.green,
+                  child: Icon(isFromTeacher ? Icons.school : Icons.person, color: Colors.white),
+                ),
+                title: Text(
+                  entry['title'] ?? 'No Title',
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const SizedBox(height: 4),
+                    Text(
+                      entry['content'].length > 70
+                          ? '${entry['content'].substring(0, 70)}...'
+                          : entry['content'],
+                      style: const TextStyle(color: Colors.black87),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      isFromTeacher ? 'From: Teacher' : 'From: You',
+                      style: TextStyle(
+                        color: isFromTeacher ? Colors.blue : Colors.green,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    Text('Sent: ${_formatTimestamp(entry['timestamp'])}'),
+                    if (isRead && readAt != null)
+                      Text(
+                        'Read at: ${_formatTimestamp(readAt)}',
+                        style: const TextStyle(color: Colors.grey),
+                      ),
+                  ],
+                ),
+                trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                onTap: () {
+
+                },
+              ),
+            );
+
+          },
+        );
+      },
     );
   }
 }

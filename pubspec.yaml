@@ -16,7 +16,9 @@ dependencies:
   google_fonts: ^6.1.0
   firebase_core: ^3.14.0
   firebase_auth: ^5.6.0
+  cloud_firestore:
   flutter_spinkit: ^5.2.0
+
 
 dev_dependencies:
   flutter_test:

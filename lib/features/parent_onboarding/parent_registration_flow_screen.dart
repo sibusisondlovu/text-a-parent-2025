@@ -174,10 +174,17 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
               //   _showError('Failed to register with backend.');
               // }
               Navigator.of(context).pop();
+              Navigator.pushReplacementNamed(context, 'parentDashboard');
             } on FirebaseAuthException catch (e) {
+              Navigator.of(context).pop();
               _showError(e.message ?? 'Firebase error occurred.');
+              print('An error occurred ' + e.message.toString());
             } catch (e) {
+              Navigator.of(context).pop();
               _showError('An error occurred. Please try again.');
+              print('An error occurred ' + e.toString());
+            }finally{
+
             }
           } : _nextPage,
           child: Text(_currentPage == 5 ? 'Finish' : 'Next'),

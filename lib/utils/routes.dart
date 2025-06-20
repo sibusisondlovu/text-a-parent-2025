@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../features/messaging/class_messages_screen.dart';
+import '../features/messaging/diary_entry_screen.dart';
 import '../features/parent_onboarding/parent_registration_flow_screen.dart';
 import '../screens/onboarding_screen.dart';
 import '../screens/parent_dashboard_screen.dart';
@@ -32,6 +33,9 @@ class RouteGenerator {
 
       case ClassMessagesScreen.id:
         return _route(const ClassMessagesScreen());
+
+      case DiaryEntryScreen.id:
+        return _route(const DiaryEntryScreen());
 
       default:
         return _errorRoute(settings.name);
