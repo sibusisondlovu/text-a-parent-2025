@@ -3,6 +3,8 @@ import 'dart:convert';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:flutter/services.dart' show rootBundle;
+
 
 import '../../utils/loading_overlay.dart';
 
@@ -23,24 +25,26 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
   String firstName = '';
   String lastName = '';
   String email = '';
+  String selectedSchool = '';
   String password = '';
   bool isLoading = false;
-  String selectedSchool = '';
+  List<dynamic> allSchools = [];
+  List<dynamic> filteredSchools = [];
+  TextEditingController searchController = TextEditingController();
   Map<String, dynamic>? selectedChild;
 
   int _currentPage = 0;
-
-  final List<String> districts = ['Gauteng', 'Western Cape', 'KwaZulu-Natal'];
-  final Map<String, List<String>> schoolsByDistrict = {
-    'Gauteng': ['Sunrise High', 'Hope Primary'],
-    'Western Cape': ['Ocean View School', 'Table Mountain Primary'],
-    'KwaZulu-Natal': ['Durban Central', 'Umlazi Primary'],
-  };
 
   final List<Map<String, dynamic>> mockChildren = [
     {'name': 'Emily Johnson', 'class': 'Grade 3', 'image': 'assets/images/child1.png'},
     {'name': 'Nathan Dube', 'class': 'Grade 1', 'image': 'assets/images/child2.png'},
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    loadSchools();
+  }
 
   void _nextPage() {
     if (_currentPage < 5) {
@@ -59,6 +63,17 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
       });
     }
   }
+
+  Future<void> loadSchools() async {
+    final String response = await rootBundle.loadString('lib/assets/data/schools.json');
+    final data = jsonDecode(response) as List<dynamic>;
+
+    setState(() {
+      allSchools = data;
+      filteredSchools = data;
+    });
+  }
+
 
   Future<void> _registerParent() async {
     if (!_formKey.currentState!.validate()) return;
@@ -219,13 +234,55 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
   }
 
   Widget _buildSchoolPage(ThemeData theme) {
-
     return Padding(
       padding: const EdgeInsets.all(24.0),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text('Select your school', style: theme.textTheme.headlineSmall),
+          const SizedBox(height: 12),
+          TextField(
+            controller: searchController,
+            decoration: const InputDecoration(
+              labelText: 'Search for your school',
+              border: OutlineInputBorder(),
+              prefixIcon: Icon(Icons.search),
+            ),
+            onChanged: (query) {
+              final suggestions = allSchools.where((school) {
+                final name = school['school_name'].toString().toUpperCase();
+                return name.contains(query.toUpperCase());
+              }).toList();
+
+              setState(() {
+                filteredSchools = suggestions;
+              });
+            },
+          ),
+          const SizedBox(height: 16),
+          Expanded(
+            child: ListView.builder(
+              itemCount: filteredSchools.length,
+              itemBuilder: (context, index) {
+                final school = filteredSchools[index];
+                return ListTile(
+                  title: Text(school['school_name']),
+                  subtitle: Text('${school['emis']}'),
+                  onTap: () {
+                    setState(() {
+                      selectedSchool = school['school_name'];
+                    });
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Selected: selectedSchool')),
+                    );
+                  },
+                  trailing: selectedSchool == school['school_name']
+                      ? const Icon(Icons.check_circle, color: Colors.green)
+                      : null,
+                );
+              },
+            ),
+          ),
         ],
       ),
     );
