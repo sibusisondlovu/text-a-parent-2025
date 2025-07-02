@@ -19,22 +19,22 @@ class _ParentOnboardingScreenState extends State<ParentOnboardingScreen> {
     {
       'title': 'Stay Connected',
       'desc': 'Instantly receive updates from your child’s teacher, anytime, anywhere.',
-      'img': 'assets/images/connect.png',
+      'img': 'lib/assets/images/1.jpeg',
     },
     {
       'title': 'Media Sharing',
       'desc': 'View classroom moments, shared videos, and learning photos.',
-      'img': 'assets/images/media.png',
+      'img': 'lib/assets/images/2.jpeg',
     },
     {
       'title': 'Message or Call Privately',
       'desc': 'Communicate securely with educators without exposing personal info.',
-      'img': 'assets/images/privacy.png',
+      'img': 'lib/assets/images/3.jpeg',
     },
     {
       'title': 'Join Class, Add Your Child',
       'desc': 'Start by adding your child and joining the right class.',
-      'img': 'assets/images/add_child.png',
+      'img': 'lib/assets/images/4.jpeg',
     },
   ];
 

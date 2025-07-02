@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -49,10 +50,15 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
   }
 
   void _nextPage() async {
+    if (_currentPage == 0) {
+      if (_formKey.currentState?.validate() != true) {
+        return; // Don't proceed if form is invalid
+      }
+    }
+
     if (_currentPage == 1) {
       if (selectedSchoolDetails != null && selectedSchoolDetails!['emis'] != null) {
         setState(() => isLoading = true);
-
         showDialog(
           context: context,
           barrierDismissible: false,
@@ -67,10 +73,8 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
             ),
           ),
         );
-
         await fetchLearners(selectedSchoolDetails!['emis']);
-
-        Navigator.of(context).pop(); // Close loading dialog
+        Navigator.of(context).pop();
         setState(() => isLoading = false);
       } else {
         _showError('Please select a valid school before continuing.');
@@ -82,6 +86,7 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
       }
     }
   }
+
 
   void _goBack() {
     if (_currentPage > 0) {
@@ -202,6 +207,37 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
                 final user = userCredential.user;
 
                 if (user != null) {
+
+                  final uid = userCredential.user?.uid;
+                   await sendUserToBackend(
+                     uid: uid!,
+                     fullNames: firstName,
+                     email: email,
+                   );
+
+                  //   await user?.updateDisplayName('$firstName $lastName');
+                  //   await user?.reload();
+                  //   await userCredential.user?.sendEmailVerification();
+
+                  final userDoc = FirebaseFirestore.instance.collection('users').doc(uid);
+
+                  await userDoc.set({
+                    'full_names': firstName,
+                    'email': email,
+                    'is_verified': false,
+                    'created_at': FieldValue.serverTimestamp(),
+                    'role': 'parent',
+                  });
+
+                  final learnersCollection = userDoc.collection('learners');
+
+                  for (var learner in matchedLearners) {
+                    await learnersCollection.doc(learner['admission_number']).set({
+                      'learner_name': '${learner['full_names']} ${learner['surname']}',
+                      'class': null, // default null or leave blank
+                    });
+                  }
+
                   await user.updateDisplayName(firstName);
                   await user.sendEmailVerification();
 
@@ -223,16 +259,7 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
 
                   _controller.jumpToPage(0); // Reset page view
                 }
-                final uid = userCredential.user?.uid;
-                await sendUserToBackend(
-                  uid: uid!,
-                  fullNames: firstName,
-                  email: email,
-                );
 
-                await user?.updateDisplayName('$firstName $lastName');
-                await user?.reload();
-                await userCredential.user?.sendEmailVerification();
                 Navigator.of(context).pop(); // Close loading dialog
 
                 Navigator.pushReplacementNamed(context, 'parentDashboard');
@@ -255,12 +282,49 @@ class _ParentRegistrationFlowScreenState extends State<ParentRegistrationFlowScr
   Widget _buildNamePage(ThemeData theme) {
     return Padding(
       padding: const EdgeInsets.all(24.0),
-      child: Column(
-        children: [
-          Text('What is your name?', style: theme.textTheme.headlineSmall),
-          TextField(decoration: const InputDecoration(labelText: 'Full Names'), onChanged: (v) => firstName = v),
-          TextField(decoration: const InputDecoration(labelText: 'Email Address'), onChanged: (v) => email = v),
-        ],
+      child: Form(
+        key: _formKey,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('What is your name?', style: theme.textTheme.headlineSmall),
+            const SizedBox(height: 16),
+            TextFormField(
+              decoration: const InputDecoration(
+                labelText: 'Full Name',
+                prefixIcon: Icon(Icons.person),
+                border: OutlineInputBorder(),
+              ),
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Full name is required';
+                }
+                return null;
+              },
+              onChanged: (value) => firstName = value.trim(),
+            ),
+            const SizedBox(height: 16),
+            TextFormField(
+              decoration: const InputDecoration(
+                labelText: 'Email Address',
+                prefixIcon: Icon(Icons.email),
+                border: OutlineInputBorder(),
+              ),
+              keyboardType: TextInputType.emailAddress,
+              validator: (value) {
+                if (value == null || value.trim().isEmpty) {
+                  return 'Email is required';
+                }
+                final emailRegex = RegExp(r'^[^@]+@[^@]+\.[^@]+');
+                if (!emailRegex.hasMatch(value)) {
+                  return 'Enter a valid email address';
+                }
+                return null;
+              },
+              onChanged: (value) => email = value.trim(),
+            ),
+          ],
+        ),
       ),
     );
   }

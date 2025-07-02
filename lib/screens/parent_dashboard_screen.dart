@@ -107,82 +107,99 @@ class _ParentDashboardScreenState extends State<ParentDashboardScreen> {
   }
 
   Widget _diaryEntries(BuildContext ctx) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('diary_entries')
-          .where('parentId')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
+    return FutureBuilder<User?>(
+      future: Future.value(FirebaseAuth.instance.currentUser),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
           return const Center(child: CircularProgressIndicator());
         }
 
-        final entries = snapshot.data!.docs;
+        final user = snapshot.data!;
+        return StreamBuilder<QuerySnapshot>(
+          stream: FirebaseFirestore.instance
+              .collection('diary_entries')
+              .where('parentId', isEqualTo: user.uid)
+              .orderBy('timestamp', descending: true)
+              .snapshots(),
+          builder: (context, snapshot) {
+            if (snapshot.connectionState == ConnectionState.waiting) {
+              return const Center(child: CircularProgressIndicator());
+            }
 
-        if (entries.isEmpty) {
-          return const Center(child: Text('No diary entries yet.'));
-        }
+            if (snapshot.hasError) {
+              return const Center(child: Text('Something went wrong.'));
+            }
 
-        return ListView.builder(
-          itemCount: entries.length,
-          itemBuilder: (context, index) {
-            final entry = entries[index];
-            final isFromTeacher = entry['sender'] == 'teacher';
-            final isRead = isFromTeacher
-                ? entry['isReadByParent']
-                : entry['isReadByTeacher'];
-            final readAt = isFromTeacher
-                ? entry['readByParentAt']
-                : entry['readByTeacherAt'];
+            if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+              return const Center(child: Text('No diary entries yet.'));
+            }
 
-            return Card(
-              margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: isFromTeacher ? Colors.blue : Colors.green,
-                  child: Icon(isFromTeacher ? Icons.school : Icons.person, color: Colors.white),
-                ),
-                title: Text(
-                  entry['title'] ?? 'No Title',
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 4),
-                    Text(
-                      entry['content'].length > 70
-                          ? '${entry['content'].substring(0, 70)}...'
-                          : entry['content'],
-                      style: const TextStyle(color: Colors.black87),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      isFromTeacher ? 'From: Teacher' : 'From: You',
-                      style: TextStyle(
-                        color: isFromTeacher ? Colors.blue : Colors.green,
-                        fontWeight: FontWeight.w500,
+            final entries = snapshot.data!.docs;
+
+            return ListView.builder(
+              itemCount: entries.length,
+              itemBuilder: (context, index) {
+                final entry = entries[index];
+                final isFromTeacher = entry['sender'] == 'teacher';
+                final isRead = isFromTeacher
+                    ? entry['isReadByParent']
+                    : entry['isReadByTeacher'];
+                final readAt = isFromTeacher
+                    ? entry['readByParentAt']
+                    : entry['readByTeacherAt'];
+
+                return Card(
+                  margin: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: isFromTeacher ? Colors.blue : Colors.green,
+                      child: Icon(
+                        isFromTeacher ? Icons.school : Icons.person,
+                        color: Colors.white,
                       ),
                     ),
-                    Text('Sent: ${_formatTimestamp(entry['timestamp'])}'),
-                    if (isRead && readAt != null)
-                      Text(
-                        'Read at: ${_formatTimestamp(readAt)}',
-                        style: const TextStyle(color: Colors.grey),
-                      ),
-                  ],
-                ),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 18),
-                onTap: () {
-
-                },
-              ),
+                    title: Text(
+                      entry['title'] ?? 'No Title',
+                      style: const TextStyle(fontWeight: FontWeight.bold),
+                    ),
+                    subtitle: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const SizedBox(height: 4),
+                        Text(
+                          entry['content'].length > 70
+                              ? '${entry['content'].substring(0, 70)}...'
+                              : entry['content'],
+                          style: const TextStyle(color: Colors.black87),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          isFromTeacher ? 'From: Teacher' : 'From: You',
+                          style: TextStyle(
+                            color: isFromTeacher ? Colors.blue : Colors.green,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                        Text('Sent: ${_formatTimestamp(entry['timestamp'])}'),
+                        if (isRead && readAt != null)
+                          Text(
+                            'Read at: ${_formatTimestamp(readAt)}',
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                      ],
+                    ),
+                    trailing: const Icon(Icons.arrow_forward_ios, size: 18),
+                    onTap: () {
+                      // Optional: mark as read
+                    },
+                  ),
+                );
+              },
             );
-
           },
         );
       },
     );
   }
+
 }
