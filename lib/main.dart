@@ -1,46 +1,26 @@
-
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:text_a_parent/screens/onboarding_screen.dart';
+import 'package:provider/provider.dart';
+import 'providers/newsletter_provider.dart';
+import 'screens/dashboard_screen.dart';
+import 'services/notification_service.dart';
 
-import 'firebase_options.dart';
-import 'utils/routes.dart';
-import 'utils/theme.dart';
-
-
-Future<void> main() async {
+void main() {
   WidgetsFlutterBinding.ensureInitialized();
-   await Firebase.initializeApp(
-     options: DefaultFirebaseOptions.currentPlatform,
-   );
-  // await dotenv.load();
-
-  SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp])
-      .then((_) {
-    runApp( const MyApp());
-  });
+  NotificationService.init(); // Initialize OneSignal
+  runApp(MyApp());
 }
 
-class MyApp extends StatefulWidget {
-  const MyApp({super.key});
-
-  @override
-  State<MyApp> createState() => _MyAppState();
-}
-
-class _MyAppState extends State<MyApp> {
+class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Text a Parent',
-      debugShowCheckedModeBanner: false,
-      theme: AppTheme.lightTheme,
-      onGenerateRoute: RouteGenerator.generateRoute,
-      home: const OnboardingScreen(
-        title: 'Welcome to Text-a-Parent',
-        description: 'Let’s help you connect with school.',
-        imageAsset: 'lib/assets/images/logo.jpeg',
+    return MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => NewsletterProvider()..loadNewsletters()),
+      ],
+      child: MaterialApp(
+        title: 'Text-a-Parent',
+        theme: ThemeData(primarySwatch: Colors.blue),
+        home: DashboardScreen(),
       ),
     );
   }
