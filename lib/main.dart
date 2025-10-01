@@ -21,6 +21,7 @@ class MyApp extends StatelessWidget {
         title: 'Text-a-Parent',
         theme: ThemeData(primarySwatch: Colors.blue),
         home: DashboardScreen(),
+        debugShowCheckedModeBanner: false,
       ),
     );
   }

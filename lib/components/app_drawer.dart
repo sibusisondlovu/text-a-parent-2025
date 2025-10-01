@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:text_a_parent/utils/theme.dart';
 
 class AppDrawer extends StatelessWidget {
   @override
@@ -7,7 +8,7 @@ class AppDrawer extends StatelessWidget {
       child: ListView(
         children: [
           DrawerHeader(
-            decoration: BoxDecoration(color: Colors.blue),
+            decoration: BoxDecoration(color: AppTheme.lightTheme.primaryColor),
             child: Text('Text-a-Parent', style: TextStyle(color: Colors.white, fontSize: 24)),
           ),
           ListTile(

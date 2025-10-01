@@ -1,16 +1,47 @@
-# text_a_parent
+# Text-a-Parent Flutter App
 
-Text-a-Prent Digital diary communication tool
+**Text-a-Parent** is a mobile app for parents to stay updated on school newsletters and messages. The app integrates with a Laravel backend and OneSignal push notifications to ensure parents are always in the loop.
 
-## Getting Started
+---
 
-This project is a starting point for a Flutter application.
+## Table of Contents
 
-A few resources to get you started if this is your first Flutter project:
+- [Features](#features)
+- [Tech Stack](#tech-stack)
+- [Installation](#installation)
+- [Configuration](#configuration)
+- [Running the App](#running-the-app)
+- [Usage](#usage)
+- [License](#license)
 
-- [Lab: Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Cookbook: Useful Flutter samples](https://docs.flutter.dev/cookbook)
+---
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## Features
+
+- **Dashboard** displaying newsletters in card-style list view.
+- **Drawer menu** for easy navigation: Dashboard, About, Logout.
+- Pulls newsletters from **Laravel backend** via API.
+- **Download newsletters** (PDF) directly from the app.
+- **OneSignal push notifications** to alert parents of new newsletters.
+- Modern, responsive UI designed with Material Design.
+
+---
+
+## Tech Stack
+
+- **Mobile Framework:** Flutter
+- **State Management:** Provider
+- **API Requests:** HTTP package
+- **Push Notifications:** OneSignal Flutter SDK
+- **Backend:** Laravel API
+
+---
+
+## Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/your-username/text-a-parent-flutter.git
+cd text-a-parent-flutter
+26

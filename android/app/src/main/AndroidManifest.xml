@@ -3,6 +3,9 @@
         android:label="text_a_parent"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+
+        <meta-data android:name="com.onesignal.NotificationOpened.DEFAULT" android:value="DISABLE" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
